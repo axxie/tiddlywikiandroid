@@ -1,6 +1,7 @@
 package com.axxie.tiddlywikiandroid;
 
 import android.Manifest;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -11,14 +12,26 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,31 +39,38 @@ import static android.support.v4.content.FileProvider.getUriForFile;
 
 // TODO: create app icon
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener
+{
 
     String root_path;
     List<String> names = new ArrayList<>();
     private ListView list;
 
 
-    private boolean isExtSdPermitted() {
+    private boolean isExtSdPermitted()
+    {
         return ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
     }
 
     // TODO: refresh on media changes (added files, mounts, etc)
-    private void RefreshFilesList() {
+    private void RefreshFilesList()
+    {
         names.clear();
 
-        if (isExtSdPermitted()) {
+        if (isExtSdPermitted())
+        {
             File dir = new File(root_path);
             // TODO: check dir for null
             dir.mkdir();
             File[] files = dir.listFiles();
-            for (int i = 0; i < files.length; i++) {
+            for (int i = 0; i < files.length; i++)
+            {
                 // TODO: filter out directories
                 names.add(files[i].getName());
             }
-        } else {
+        }
+        else
+        {
             names.add("Need access to external storage");
         }
 
@@ -59,8 +79,36 @@ public class MainActivity extends AppCompatActivity {
         list.setAdapter(adapter);
     }
 
+    private void CreateWikiFile(String name) throws IllegalArgumentException, IOException
+    {
+        if (name.equals(".html"))
+        {
+            throw new IllegalArgumentException("File name cannot be empty");
+        }
 
-    private void requestPermission() {
+        InputStream in = getResources().openRawResource(R.raw.empty);
+        FileOutputStream out = new FileOutputStream(root_path + "/" + name);
+        byte[] buff = new byte[1024];
+        int read = 0;
+
+        try
+        {
+            while ((read = in.read(buff)) > 0)
+            {
+                out.write(buff, 0, read);
+            }
+        }
+        finally
+        {
+            in.close();
+            out.close();
+        }
+        RefreshFilesList();
+    }
+
+
+    private void requestPermission()
+    {
         ActivityCompat.requestPermissions(this,
                 new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
                 0);
@@ -68,64 +116,70 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onRequestPermissionsResult(final int requestCode,
-                                           String permissions[], int[] grantResults) {
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                                           String permissions[], int[] grantResults)
+    {
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+        {
             RefreshFilesList();
         }
-        else {
+        else
+        {
             if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE))
+            {
                 // TODO: move strings to language resource
                 Snackbar.make(list, "Access to external storage is required to read Tidllywiki files", Snackbar.LENGTH_INDEFINITE)
-                        .setAction("Retry", new View.OnClickListener() {
+                        .setAction("Retry", new View.OnClickListener()
+                        {
                             @Override
-                            public void onClick(View view) {
+                            public void onClick(View view)
+                            {
                                 requestPermission();
                             }
                         }).show();
 
             }
-            else {
+            else
+            {
                 // TODO: show empty state with instruction
             }
         }
     }
 
     @Override
-    public void onStart() {
+    public void onStart()
+    {
         super.onStart();
-        if (!isExtSdPermitted()) {
+        if (!isExtSdPermitted())
+        {
             requestPermission();
-        } else {
+        }
+        else
+        {
             RefreshFilesList();
         }
     }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState)
+    {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         FloatingActionButton fab = findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // TODO: create file
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
-
+        fab.setOnClickListener(this);
 
         root_path = Environment.getExternalStorageDirectory().toString() + "/tiddlywiki";
 
         list = findViewById(R.id.files);
-        list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        list.setOnItemClickListener(new AdapterView.OnItemClickListener()
+        {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                String name = (String)parent.getItemAtPosition(position);
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id)
+            {
+                String name = (String) parent.getItemAtPosition(position);
                 File file = new File(root_path + "/" + name);
                 Uri contentUri;
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
@@ -144,4 +198,71 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    @Override
+    public void onClick(View view)
+    {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("Enter file name");
+
+        // Setup custom view for dialog
+        LayoutInflater inflater = getLayoutInflater();
+        final View content = inflater.inflate(R.layout.fragment_new_file_dialog, null);
+        final EditText filename = content.findViewById(R.id.filename);
+        builder.setView(content);
+
+        builder.setPositiveButton("Save", null);
+        builder.setNegativeButton("Cancel", null);
+
+        final AlertDialog dialog = builder.create();
+
+        dialog.setOnShowListener(new DialogInterface.OnShowListener()
+        {
+            @Override
+            public void onShow(final DialogInterface dlg)
+            {
+                final Button positiveButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+                positiveButton.setOnClickListener(new View.OnClickListener()
+                {
+                    @Override
+                    public void onClick(View v)
+                    {
+                        try
+                        {
+                            CreateWikiFile(filename.getText().toString() + ".html");
+                        }
+                        catch (IOException | IllegalArgumentException e)
+                        {
+                            Toast.makeText(MainActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                            e.printStackTrace();
+                            return;
+                        }
+                        dialog.dismiss();
+                    }
+                });
+            }
+        });
+
+
+        // Show keyboard immediately
+        dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+
+        // Accept "Done" and <Enter> keys as "Save" button
+        filename.setOnEditorActionListener(new TextView.OnEditorActionListener()
+        {
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event)
+            {
+                if ((event != null && (event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) || (actionId == EditorInfo.IME_ACTION_DONE))
+                {
+                    if (filename.getText().length() != 0)
+                    {
+                        dialog.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+                    }
+                }
+                return false;
+            }
+        });
+
+        dialog.show();
+
+    }
 }

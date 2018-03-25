@@ -1,0 +1,24 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal">
+
+    <EditText
+        android:id="@+id/filename"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="20dp"
+        android:layout_weight="1"
+        android:ems="10"
+        android:hint="File Name"
+        android:imeOptions="actionDone"
+        android:inputType="none|textShortMessage" />
+
+    <TextView
+        android:layout_width="2dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text=".html"
+        android:textAppearance="@android:style/TextAppearance.Material.Medium" />
+</LinearLayout>
