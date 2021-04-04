@@ -53,13 +53,20 @@ public class ViewActivity extends AppCompatActivity {
     public String getFileNameFromUri(Uri uri) {
         String result = null;
         if (uri.getScheme().equals("content")) {
-            Cursor cursor = getContentResolver().query(uri, null, null, null, null);
+            Cursor cursor = null;
+
             try {
+                cursor = getContentResolver().query(uri, null, null, null, null);
                 if (cursor != null && cursor.moveToFirst()) {
                     result = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
                 }
+            } catch (IllegalArgumentException e) {
+                // TODO: handle error
+                return null;
             } finally {
-                cursor.close();
+                if (cursor != null) {
+                    cursor.close();
+                }
             }
         }
         if (result == null) {
@@ -109,8 +116,12 @@ public class ViewActivity extends AppCompatActivity {
                 if (progress == 100)
                 {
                     activity.progress.setVisibility(View.GONE);
-                    setTitle(title);
                 }
+            }
+
+            @Override
+            public void onReceivedTitle(WebView view, String title) {
+                setTitle(title);
             }
         });
         view.setWebViewClient(new WebViewClient() {
