@@ -136,7 +136,9 @@ public class ViewActivity extends AppCompatActivity {
             {
                 if (url != null && (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("content://com.axxie.fileprovider"))) {
                     // TODO: propose download for unhandled files (e.g. bash scripts) (images should be opened ok)
-                    view.getContext().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+                    view.getContext().startActivity(intent);
                     return true;
                 } else {
                     return false;
